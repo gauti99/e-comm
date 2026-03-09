@@ -11,7 +11,7 @@ const generateToken = (id) => {
 // Register
 export const registerUser = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, role } = req.body;
 
     const userExists = await User.findOne({ email });
 
@@ -19,16 +19,23 @@ export const registerUser = async (req, res) => {
       return res.status(400).json({ message: "User already exists" });
     }
 
+    // Check if trying to create admin (prevent unauthorized admin creation)
+    if (role === "admin") {
+      return res.status(403).json({ message: "Cannot register as admin" });
+    }
+
     const user = await User.create({
       name,
       email,
       password,
+      role: role || "user", // Default to "user" if no role provided
     });
 
     res.status(201).json({
       _id: user._id,
       name: user.name,
       email: user.email,
+      role: user.role,
       token: generateToken(user._id),
     });
   } catch (error) {
@@ -48,6 +55,7 @@ export const loginUser = async (req, res) => {
         _id: user._id,
         name: user.name,
         email: user.email,
+        role: user.role,
         token: generateToken(user._id),
       });
     } else {
@@ -57,11 +65,77 @@ export const loginUser = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-// Get logged in user
+
+// Get logged in user profile
 export const getUserProfile = async (req, res) => {
   if (req.user) {
-    res.json(req.user);
+    res.json({
+      _id: req.user._id,
+      name: req.user.name,
+      email: req.user.email,
+      role: req.user.role,
+    });
   } else {
     res.status(404).json({ message: "User not found" });
+  }
+};
+
+// Admin only: Get all users
+export const getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find({}).select("-password");
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Admin only: Delete user
+export const deleteUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (user) {
+      // Prevent admin from deleting themselves
+      if (user._id.toString() === req.user._id.toString()) {
+        return res.status(400).json({ message: "Cannot delete your own account" });
+      }
+      
+      await user.deleteOne();
+      res.json({ message: "User removed" });
+    } else {
+      res.status(404).json({ message: "User not found" });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Admin only: Update user role
+export const updateUserRole = async (req, res) => {
+  try {
+    const { role } = req.body;
+    const user = await User.findById(req.params.id);
+
+    if (user) {
+      // Prevent admin from changing their own role
+      if (user._id.toString() === req.user._id.toString()) {
+        return res.status(400).json({ message: "Cannot change your own role" });
+      }
+
+      user.role = role;
+      const updatedUser = await user.save();
+
+      res.json({
+        _id: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        role: updatedUser.role,
+      });
+    } else {
+      res.status(404).json({ message: "User not found" });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };

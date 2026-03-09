@@ -3,15 +3,120 @@ import Product from "../models/Product.js";
 // Create Product
 export const createProduct = async (req, res) => {
   try {
+    const { name, description, price, category, brand, image, countInStock, sizes } = req.body;
+    
+    // Check for missing required fields
+    const missingFields = [];
+    
+    if (!name) missingFields.push('name');
+    if (!description) missingFields.push('description');
+    if (price === undefined || price === null) missingFields.push('price');
+    if (!category) missingFields.push('category');
+    if (!brand) missingFields.push('brand');
+    if (!image) missingFields.push('image');
+    if (countInStock === undefined || countInStock === null) missingFields.push('countInStock');
+    
+    // If there are missing fields, return error
+    if (missingFields.length > 0) {
+      return res.status(400).json({ 
+        success: false,
+        message: `Missing required fields: ${missingFields.join(', ')}` 
+      });
+    }
+    
+    // Validate field types and values
+    if (typeof price !== 'number' || price < 0) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Price must be a positive number' 
+      });
+    }
+    
+    if (typeof countInStock !== 'number' || countInStock < 0) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'countInStock must be a positive number' 
+      });
+    }
+    
+    if (sizes && !Array.isArray(sizes)) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'sizes must be an array' 
+      });
+    }
+    
+    // Validate string fields are not empty
+    if (name.trim() === '') {
+      return res.status(400).json({ 
+        success: false,
+        message: 'name cannot be empty' 
+      });
+    }
+    
+    if (description.trim() === '') {
+      return res.status(400).json({ 
+        success: false,
+        message: 'description cannot be empty' 
+      });
+    }
+    
+    if (category.trim() === '') {
+      return res.status(400).json({ 
+        success: false,
+        message: 'category cannot be empty' 
+      });
+    }
+    
+    if (brand.trim() === '') {
+      return res.status(400).json({ 
+        success: false,
+        message: 'brand cannot be empty' 
+      });
+    }
+    
+    if (image.trim() === '') {
+      return res.status(400).json({ 
+        success: false,
+        message: 'image cannot be empty' 
+      });
+    }
+    
+    // Create product if all validations pass
     const product = new Product({
-      ...req.body,
+      name,
+      description,
+      price,
+      category,
+      brand,
+      image,
+      countInStock,
+      sizes: sizes || [], // Default to empty array if not provided
       user: req.user._id,
     });
 
     const createdProduct = await product.save();
-    res.status(201).json(createdProduct);
+    
+    res.status(201).json({
+      success: true,
+      data: createdProduct,
+      message: "Product created successfully"
+    });
+    
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    // Handle mongoose validation errors
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({ 
+        success: false,
+        message: messages.join(', ') 
+      });
+    }
+    
+    res.status(500).json({ 
+      success: false,
+      message: error.message 
+    });
   }
 };
 

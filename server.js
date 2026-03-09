@@ -11,11 +11,14 @@ connectDB();
 const app = express();
 
 app.use(express.json());
-app.use(cors());
-
+app.use(cors({
+  origin: "http://localhost:5173",
+}));
 // connect user routes
 app.use("/api/users", userRoutes);
 app.use("/api/products", productRoutes);
+
+
 app.get("/", (req, res) => {
   res.send("API is running...");
 });
