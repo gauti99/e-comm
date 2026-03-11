@@ -31,8 +31,8 @@ const productSchema = new mongoose.Schema(
       required: true,
       default: 0,
     },
-    sizes: {
-      type: [String], // example: ["S", "M", "L"]
+    size: {
+      type: String, // example: "S", "M", "L"
     },
     user: {
       type: mongoose.Schema.Types.ObjectId,

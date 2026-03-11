@@ -3,7 +3,7 @@ import Product from "../models/Product.js";
 // Create Product
 export const createProduct = async (req, res) => {
   try {
-    const { name, description, price, category, brand, image, countInStock, sizes } = req.body;
+    const { name, description, price, category, brand, image, countInStock, size } = req.body;
     
     // Check for missing required fields
     const missingFields = [];
@@ -39,12 +39,12 @@ export const createProduct = async (req, res) => {
       });
     }
     
-    if (sizes && !Array.isArray(sizes)) {
-      return res.status(400).json({ 
-        success: false,
-        message: 'sizes must be an array' 
-      });
-    }
+    // if (size) {
+    //   return res.status(400).json({ 
+    //     success: false,
+    //     message: 'size must be an array' 
+    //   });
+    // }
     
     // Validate string fields are not empty
     if (name.trim() === '') {
@@ -91,7 +91,7 @@ export const createProduct = async (req, res) => {
       brand,
       image,
       countInStock,
-      sizes: sizes || [], // Default to empty array if not provided
+      size, // Default to empty array if not provided
       user: req.user._id,
     });
 
@@ -150,7 +150,7 @@ export const updateProduct = async (req, res) => {
     product.image = req.body.image || product.image;
     product.countInStock =
       req.body.countInStock || product.countInStock;
-    product.sizes = req.body.sizes || product.sizes;
+    product.size = req.body.size || product.size;
 
     const updatedProduct = await product.save();
     res.json(updatedProduct);
