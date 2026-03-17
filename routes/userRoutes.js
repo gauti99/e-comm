@@ -4,16 +4,23 @@ import {
   loginUser,
   getUserProfile,
   getAllUsers,
+  deleteUser,
+  updateUser,
 } from "../controllers/userController.js";
-import { protect } from "../middleware/authMiddleware.js";
+import { protect, admin } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
 router.post("/register", registerUser);
-router.get("/get-all-users", getAllUsers);
 router.post("/login", loginUser);
 
-// Protected route
+//require authentication
 router.get("/profile", protect, getUserProfile);
+
+// admin only routes
+router.get("/get-all-users", protect, admin, getAllUsers);
+// admin edit/delete routes
+router.put("/:id", protect, admin, updateUser);
+router.delete("/:id", protect, admin, deleteUser);
 
 export default router;

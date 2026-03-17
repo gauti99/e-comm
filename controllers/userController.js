@@ -139,3 +139,48 @@ export const updateUserRole = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// Admin Edit any user's details (name, email, role)
+
+export const updateUser = async (req, res) => {
+  try {
+    const { name, email, role, password } = req.body;
+
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // ❗ Prevent self-role change
+    if (
+      user._id.toString() === req.user._id.toString() &&
+      role &&
+      role !== user.role
+    ) {
+      return res.status(400).json({ message: "Cannot change your own role" });
+    }
+
+    // ✅ Update fields
+    user.name = name || user.name;
+    user.email = email || user.email;
+    user.role = role || user.role;
+
+    // ✅ Password update (will trigger pre-save)
+    if (password && password.trim() !== "") {
+      user.password = password;
+    }
+
+    const updatedUser = await user.save();
+
+    res.json({
+      _id: updatedUser._id,
+      name: updatedUser.name,
+      email: updatedUser.email,
+      role: updatedUser.role,
+    });
+  } catch (error) {
+    console.error("Update user error:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
